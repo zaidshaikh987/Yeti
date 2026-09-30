@@ -1,0 +1,51 @@
+{
+  "name": "Station",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "region": {
+      "type": "string",
+      "enum": [
+        "antarctica",
+        "arctic",
+        "himalaya"
+      ]
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "description": {
+      "type": "string"
+    },
+    "commissioned_year": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "seasonal",
+        "decommissioned",
+        "planned"
+      ],
+      "default": "active"
+    },
+    "country": {
+      "type": "string",
+      "default": "India"
+    },
+    "is_prototype": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name",
+    "region"
+  ]
+}

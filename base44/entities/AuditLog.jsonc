@@ -1,0 +1,49 @@
+{
+  "name": "AuditLog",
+  "type": "object",
+  "properties": {
+    "actor": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "upload",
+        "edit",
+        "metadata_change",
+        "ai_generation",
+        "review",
+        "approval",
+        "rejection",
+        "publication",
+        "access_request",
+        "role_change",
+        "login",
+        "security"
+      ]
+    },
+    "target": {
+      "type": "string"
+    },
+    "target_type": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    },
+    "before_value": {
+      "type": "string"
+    },
+    "after_value": {
+      "type": "string"
+    },
+    "is_prototype": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "actor",
+    "action"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "name": "ResearchTheme",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "color": {
+      "type": "string",
+      "default": "#4DA8D8"
+    },
+    "asset_count": {
+      "type": "number",
+      "default": 0
+    },
+    "is_prototype": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

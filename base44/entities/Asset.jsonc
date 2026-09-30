@@ -1,0 +1,142 @@
+{
+  "name": "Asset",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "content_type": {
+      "type": "string",
+      "enum": [
+        "expedition",
+        "report",
+        "dataset",
+        "publication",
+        "photograph",
+        "video",
+        "news",
+        "institutional_activity",
+        "research_project"
+      ]
+    },
+    "region": {
+      "type": "string",
+      "enum": [
+        "antarctica",
+        "arctic",
+        "himalaya",
+        "southern_ocean",
+        "global"
+      ]
+    },
+    "year": {
+      "type": "number"
+    },
+    "season": {
+      "type": "string"
+    },
+    "research_theme": {
+      "type": "string"
+    },
+    "expedition_id": {
+      "type": "string"
+    },
+    "station_id": {
+      "type": "string"
+    },
+    "creator": {
+      "type": "string"
+    },
+    "contributor": {
+      "type": "string"
+    },
+    "publisher": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string",
+      "default": "en"
+    },
+    "rights": {
+      "type": "string"
+    },
+    "license": {
+      "type": "string"
+    },
+    "access_class": {
+      "type": "string",
+      "enum": [
+        "open",
+        "registered",
+        "restricted",
+        "embargoed",
+        "internal",
+        "removed"
+      ],
+      "default": "open"
+    },
+    "review_status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "ai_generated",
+        "editor_review",
+        "scientific_review",
+        "approved",
+        "scheduled",
+        "published",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "file_format": {
+      "type": "string"
+    },
+    "file_size": {
+      "type": "string"
+    },
+    "checksum": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string",
+      "default": "1.0"
+    },
+    "source_url": {
+      "type": "string"
+    },
+    "citation": {
+      "type": "string"
+    },
+    "keywords": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "file_uri": {
+      "type": "string"
+    },
+    "thumbnail_url": {
+      "type": "string"
+    },
+    "embargo_end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_prototype": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "title",
+    "content_type"
+  ]
+}

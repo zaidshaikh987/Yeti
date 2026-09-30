@@ -1,0 +1,35 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "user",
+        "admin",
+        "super_admin",
+        "repository_admin",
+        "communication_editor",
+        "scientific_reviewer",
+        "teacher_coordinator",
+        "read_only_auditor"
+      ],
+      "default": "user"
+    },
+    "department": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "pending"
+      ],
+      "default": "active"
+    },
+    "last_active": {
+      "type": "string"
+    }
+  }
+}

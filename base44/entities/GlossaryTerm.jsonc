@@ -1,0 +1,35 @@
+{
+  "name": "GlossaryTerm",
+  "type": "object",
+  "properties": {
+    "term": {
+      "type": "string"
+    },
+    "definition": {
+      "type": "string"
+    },
+    "related_topics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "hindi_translation": {
+      "type": "string"
+    },
+    "marathi_translation": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "is_prototype": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "term",
+    "definition"
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "name": "GeneratedContent",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "source_asset_id": {
+      "type": "string"
+    },
+    "source_title": {
+      "type": "string"
+    },
+    "format": {
+      "type": "string",
+      "enum": [
+        "website_article",
+        "summary",
+        "x_post",
+        "instagram_caption",
+        "linkedin_post",
+        "faq",
+        "quiz",
+        "carousel_script"
+      ]
+    },
+    "audience": {
+      "type": "string",
+      "enum": [
+        "public",
+        "class_6_8",
+        "class_9_12",
+        "undergraduate",
+        "press_release"
+      ]
+    },
+    "language": {
+      "type": "string",
+      "default": "en"
+    },
+    "length": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "claim": {
+            "type": "string"
+          },
+          "source_name": {
+            "type": "string"
+          },
+          "excerpt": {
+            "type": "string"
+          },
+          "match_score": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "unsupported_claims": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "ai_generated",
+        "editor_review",
+        "scientific_review",
+        "approved",
+        "scheduled",
+        "published",
+        "archived"
+      ],
+      "default": "ai_generated"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "website",
+        "instagram",
+        "linkedin",
+        "x",
+        "facebook",
+        "youtube",
+        "rss"
+      ],
+      "default": "website"
+    },
+    "scheduled_time": {
+      "type": "string"
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "reviewer": {
+      "type": "string"
+    },
+    "review_comments": {
+      "type": "string"
+    },
+    "is_prototype": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "title",
+    "source_asset_id",
+    "format",
+    "audience"
+  ]
+}

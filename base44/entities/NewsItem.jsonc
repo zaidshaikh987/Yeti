@@ -1,0 +1,46 @@
+{
+  "name": "NewsItem",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "expedition",
+        "research",
+        "education",
+        "institutional",
+        "announcement"
+      ],
+      "default": "announcement"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "author": {
+      "type": "string"
+    },
+    "is_prototype": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "title",
+    "summary",
+    "category",
+    "date"
+  ]
+}

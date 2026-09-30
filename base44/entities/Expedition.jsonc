@@ -1,0 +1,66 @@
+{
+  "name": "Expedition",
+  "type": "object",
+  "properties": {
+    "expedition_number": {
+      "type": "number"
+    },
+    "title": {
+      "type": "string"
+    },
+    "year": {
+      "type": "number"
+    },
+    "season": {
+      "type": "string"
+    },
+    "region": {
+      "type": "string",
+      "enum": [
+        "antarctica",
+        "arctic",
+        "himalaya",
+        "southern_ocean"
+      ]
+    },
+    "stations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "research_themes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "description": {
+      "type": "string"
+    },
+    "pi_name": {
+      "type": "string"
+    },
+    "reports_count": {
+      "type": "number",
+      "default": 0
+    },
+    "datasets_count": {
+      "type": "number",
+      "default": 0
+    },
+    "photographs_count": {
+      "type": "number",
+      "default": 0
+    },
+    "is_prototype": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "title",
+    "year",
+    "region"
+  ]
+}

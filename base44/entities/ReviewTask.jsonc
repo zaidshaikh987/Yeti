@@ -1,0 +1,59 @@
+{
+  "name": "ReviewTask",
+  "type": "object",
+  "properties": {
+    "asset_id": {
+      "type": "string"
+    },
+    "asset_title": {
+      "type": "string"
+    },
+    "review_type": {
+      "type": "string",
+      "enum": [
+        "metadata",
+        "scientific",
+        "duplicate",
+        "ocr"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "changes_requested",
+        "in_review",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "reviewer": {
+      "type": "string"
+    },
+    "comments": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "medium"
+    },
+    "is_prototype": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "asset_id",
+    "asset_title",
+    "review_type"
+  ]
+}
