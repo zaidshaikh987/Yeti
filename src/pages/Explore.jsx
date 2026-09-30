@@ -23,10 +23,10 @@ export default function Explore() {
         ]);
         
         setData({
-          expeditions: expRes.items || [],
-          stations: stnRes.items || [],
-          themes: thmRes.items || [],
-          assets: astRes.items || []
+          expeditions: Array.isArray(expRes) ? expRes : expRes.items || [],
+          stations: Array.isArray(stnRes) ? stnRes : stnRes.items || [],
+          themes: Array.isArray(thmRes) ? thmRes : thmRes.items || [],
+          assets: Array.isArray(astRes) ? astRes : astRes.items || []
         });
       } catch (err) {
         console.error("Error fetching explore data:", err);

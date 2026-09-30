@@ -1,41 +1,39 @@
 import { db } from '@/api/base44Client';
-
-import React from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Network, Search, ZoomIn, ZoomOut, Maximize, Filter, X, Compass, MapPin, FileText, Database, BookOpen, Image, Video, Tag, ExternalLink } from "lucide-react";
-
+import { Network, Search, ZoomIn, ZoomOut, Maximize, Filter, X, Compass, MapPin, FileText, Database, BookOpen, Image as ImageIcon, Video, Tag, ExternalLink } from "lucide-react";
+import ForceGraph2D from "react-force-graph-2d";
 import { PrototypeTag } from "@/components/Badges";
-import { useForceGraph, curvedPath } from "@/hooks/useForceGraph";
 import { cn } from "@/lib/utils";
 
 const NODE_TYPES = {
-  expedition: { label: "Expedition", icon: Compass, color: "#4DA8D8", radius: 26 },
-  station: { label: "Station", icon: MapPin, color: "#0B2942", radius: 23 },
-  theme: { label: "Theme", icon: Tag, color: "#F4A340", radius: 19 },
-  report: { label: "Report", icon: FileText, color: "#6366F1", radius: 15 },
-  dataset: { label: "Dataset", icon: Database, color: "#0EA5E9", radius: 15 },
-  publication: { label: "Publication", icon: BookOpen, color: "#8B5CF6", radius: 15 },
-  photograph: { label: "Photograph", icon: Image, color: "#22C55E", radius: 13 },
-  video: { label: "Video", icon: Video, color: "#EF4444", radius: 13 },
+  expedition: { label: "Expedition", icon: Compass, color: "#4DA8D8", radius: 10 },
+  station: { label: "Station", icon: MapPin, color: "#0B2942", radius: 8 },
+  theme: { label: "Theme", icon: Tag, color: "#F4A340", radius: 7 },
+  report: { label: "Report", icon: FileText, color: "#6366F1", radius: 5 },
+  dataset: { label: "Dataset", icon: Database, color: "#0EA5E9", radius: 5 },
+  publication: { label: "Publication", icon: BookOpen, color: "#8B5CF6", radius: 5 },
+  photograph: { label: "Photograph", icon: ImageIcon, color: "#22C55E", radius: 4 },
+  video: { label: "Video", icon: Video, color: "#EF4444", radius: 4 },
 };
 
 export default function KnowledgeGraph() {
-  const [assets, setAssets] = React.useState([]);
-  const [expeditions, setExpeditions] = React.useState([]);
-  const [stations, setStations] = React.useState([]);
-  const [themes, setThemes] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [search, setSearch] = React.useState("");
-  const [activeTypes, setActiveTypes] = React.useState(Object.keys(NODE_TYPES));
-  const [selectedNode, setSelectedNode] = React.useState(null);
-  const [hoveredNode, setHoveredNode] = React.useState(null);
-  const [zoom, setZoom] = React.useState(1);
-  const [pan, setPan] = React.useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = React.useState(false);
-  const dragStart = React.useRef({ x: 0, y: 0, panX: 0, panY: 0 });
-  const svgRef = React.useRef(null);
+  const [assets, setAssets] = useState([]);
+  const [expeditions, setExpeditions] = useState([]);
+  const [stations, setStations] = useState([]);
+  const [themes, setThemes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [activeTypes, setActiveTypes] = useState(Object.keys(NODE_TYPES));
+  
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [hoveredNode, setHoveredNode] = useState(null);
+  
+  const fgRef = useRef();
+  const containerRef = useRef();
+  const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
 
-  React.useEffect(() => {
+  useEffect(() => {
     (async () => {
       try {
         const [aRes, eRes, sRes, tRes] = await Promise.all([
@@ -56,20 +54,27 @@ export default function KnowledgeGraph() {
     })();
   }, []);
 
-  // Build raw nodes + edges (positions assigned by the force simulation)
-  const { rawNodes, rawEdges } = React.useMemo(() => {
+  useEffect(() => {
+    if (containerRef.current) {
+      const { clientWidth } = containerRef.current;
+      setDimensions({ width: clientWidth, height: 600 });
+      
+      const handleResize = () => {
+        if (containerRef.current) {
+          setDimensions({ width: containerRef.current.clientWidth, height: 600 });
+        }
+      };
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, [loading]);
+
+  const { graphData } = useMemo(() => {
     const nodes = [];
     const edges = [];
 
     expeditions.forEach((e) => {
-      nodes.push({
-        id: `exp_${e.id}`,
-        entityId: e.id,
-        type: "expedition",
-        label: e.title?.replace(/Indian Scientific Expedition to Antarctica/, "ISEA") || `Exp ${e.expedition_number}`,
-        fullLabel: e.title,
-        data: e,
-      });
+      nodes.push({ id: `exp_${e.id}`, entityId: e.id, type: "expedition", label: e.title?.replace(/Indian Scientific Expedition to Antarctica/, "ISEA") || `Exp ${e.expedition_number}`, fullLabel: e.title, data: e });
     });
     stations.forEach((s) => {
       nodes.push({ id: `stn_${s.id}`, entityId: s.id, type: "station", label: s.name, fullLabel: s.name, data: s });
@@ -105,52 +110,62 @@ export default function KnowledgeGraph() {
       }
     });
 
-    return { rawNodes: nodes, rawEdges: edges };
+    return { graphData: { nodes, links: edges } };
   }, [assets, expeditions, stations, themes]);
 
-  const { nodes, edges } = useForceGraph(rawNodes, rawEdges, { width: 1000, height: 800, iterations: 340 });
-  const nodeById = React.useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
+  const filteredData = useMemo(() => {
+    const validNodeIds = new Set(
+      graphData.nodes
+        .filter(n => activeTypes.includes(n.type))
+        .filter(n => !search || n.fullLabel?.toLowerCase().includes(search.toLowerCase()))
+        .map(n => n.id)
+    );
 
-  const filteredNodes = nodes.filter((n) => {
-    if (!activeTypes.includes(n.type)) return false;
-    if (search && !n.fullLabel?.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
+    return {
+      nodes: graphData.nodes.filter(n => validNodeIds.has(n.id)),
+      links: graphData.links.filter(l => validNodeIds.has(l.source.id || l.source) && validNodeIds.has(l.target.id || l.target))
+    };
+  }, [graphData, activeTypes, search]);
 
-  const visibleNodeIds = new Set(filteredNodes.map((n) => n.id));
-  const visibleEdges = edges.filter((e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target));
+  const highlightNodes = useMemo(() => {
+    const nodes = new Set();
+    const links = new Set();
+    if (hoveredNode) {
+      nodes.add(hoveredNode.id);
+      filteredData.links.forEach(l => {
+        if (l.source.id === hoveredNode.id) { nodes.add(l.target.id); links.add(l); }
+        if (l.target.id === hoveredNode.id) { nodes.add(l.source.id); links.add(l); }
+      });
+    }
+    if (selectedNode) {
+      nodes.add(selectedNode.id);
+      filteredData.links.forEach(l => {
+        if (l.source.id === selectedNode.id) { nodes.add(l.target.id); links.add(l); }
+        if (l.target.id === selectedNode.id) { nodes.add(l.source.id); links.add(l); }
+      });
+    }
+    return { nodes, links };
+  }, [hoveredNode, selectedNode, filteredData]);
 
-  const connectedIds = React.useMemo(() => {
-    if (!hoveredNode && !selectedNode) return null;
-    const nodeId = hoveredNode || selectedNode;
-    const ids = new Set([nodeId]);
-    visibleEdges.forEach((e) => {
-      if (e.source === nodeId) ids.add(e.target);
-      if (e.target === nodeId) ids.add(e.source);
-    });
-    return ids;
-  }, [hoveredNode, selectedNode, visibleEdges]);
+  const handleNodeClick = useCallback(node => {
+    setSelectedNode(node);
+    if (fgRef.current) {
+      fgRef.current.centerAt(node.x, node.y, 1000);
+      fgRef.current.zoom(3, 1000);
+    }
+  }, []);
+
+  const resetView = () => {
+    if (fgRef.current) {
+      fgRef.current.zoomToFit(1000, 50);
+    }
+  };
+
+  const edgeColor = (type) => (type === "exp-station" ? "#4DA8D8" : type === "exp-theme" ? "#F4A340" : type === "asset-station" ? "#0B2942" : "#8B5CF6");
 
   const toggleType = (type) => {
     setActiveTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]));
   };
-
-  const handleMouseDown = (e) => {
-    setIsDragging(true);
-    dragStart.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y };
-  };
-  const handleMouseMove = (e) => {
-    if (isDragging) {
-      setPan({
-        x: dragStart.current.panX + (e.clientX - dragStart.current.x),
-        y: dragStart.current.panY + (e.clientY - dragStart.current.y),
-      });
-    }
-  };
-  const handleMouseUp = () => setIsDragging(false);
-  const resetView = () => { setZoom(1); setPan({ x: 0, y: 0 }); };
-
-  const edgeColor = (type) => (type === "exp-station" ? "#4DA8D8" : type === "exp-theme" ? "#F4A340" : type === "asset-station" ? "#0B2942" : "#8B5CF6");
 
   return (
     <div className="mx-auto max-w-[1360px] px-4 py-6 sm:px-6 lg:px-8">
@@ -168,12 +183,11 @@ export default function KnowledgeGraph() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-[#071A2B]">Knowledge Graph</h1>
-          <p className="text-sm text-muted-foreground">Explore how expeditions, stations, research themes and repository content connect</p>
+          <p className="text-sm text-muted-foreground">Interactive visualization of all connected repository entities.</p>
         </div>
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-4">
-        {/* Controls */}
         <div className="space-y-4 lg:col-span-1">
           <div className="rounded-xl border border-border bg-white p-4">
             <div className="relative">
@@ -193,11 +207,11 @@ export default function KnowledgeGraph() {
               <Filter className="h-4 w-4 text-muted-foreground" />
               <h3 className="text-sm font-semibold text-[#071A2B]">Filter by Type</h3>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 max-h-[300px] overflow-y-auto pr-1">
               {Object.entries(NODE_TYPES).map(([type, config]) => {
                 const Icon = config.icon;
                 const active = activeTypes.includes(type);
-                const count = nodes.filter((n) => n.type === type).length;
+                const count = graphData.nodes.filter((n) => n.type === type).length;
                 return (
                   <button
                     key={type}
@@ -216,7 +230,7 @@ export default function KnowledgeGraph() {
           </div>
 
           {selectedNode && (
-            <div className="rounded-xl border border-[#4DA8D8]/40 bg-[#4DA8D8]/5 p-4">
+            <div className="rounded-xl border border-[#4DA8D8]/40 bg-[#4DA8D8]/5 p-4 shadow-sm transition-all">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
                   {(() => {
@@ -232,129 +246,74 @@ export default function KnowledgeGraph() {
               {selectedNode.data?.year && <p className="mt-1 text-xs text-muted-foreground">Year: {selectedNode.data.year}</p>}
               {selectedNode.data?.region && <p className="text-xs text-muted-foreground">Region: {selectedNode.data.region}</p>}
               {selectedNode.type !== "expedition" && selectedNode.type !== "station" && selectedNode.type !== "theme" && (
-                <Link to={`/asset/${selectedNode.entityId}`} className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[#4DA8D8] hover:underline">
-                  Open detail <ExternalLink className="h-3 w-3" />
+                <Link to={`/asset/${selectedNode.entityId}`} className="mt-4 inline-flex items-center justify-center w-full gap-2 bg-[#4DA8D8] text-white py-2 rounded-md text-xs font-medium hover:bg-[#3d8cb5] transition-colors">
+                  Open Details <ExternalLink className="h-3 w-3" />
                 </Link>
               )}
             </div>
           )}
-
-          <div className="rounded-xl border border-border bg-white p-4">
-            <h3 className="mb-2 text-sm font-semibold text-[#071A2B]">Relationships</h3>
-            <div className="space-y-1.5 text-xs">
-              <div className="flex items-center gap-2"><span className="h-0.5 w-6" style={{ backgroundColor: "#4DA8D8" }} /> Expedition → Station</div>
-              <div className="flex items-center gap-2"><span className="h-0.5 w-6" style={{ backgroundColor: "#F4A340" }} /> Expedition → Theme</div>
-              <div className="flex items-center gap-2"><span className="h-0.5 w-6" style={{ backgroundColor: "#0B2942" }} /> Asset → Station</div>
-              <div className="flex items-center gap-2"><span className="h-0.5 w-6" style={{ backgroundColor: "#8B5CF6" }} /> Asset → Theme</div>
-            </div>
-          </div>
         </div>
 
-        {/* Graph */}
         <div className="lg:col-span-3">
-          <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-[#F5F8FA] to-[#EAF2F6]">
-            <div className="absolute right-3 top-3 z-10 flex flex-col gap-1 rounded-lg border border-border bg-white p-1 shadow-sm">
-              <button onClick={() => setZoom((z) => Math.min(z + 0.2, 2.5))} className="rounded-md p-1.5 hover:bg-muted" title="Zoom in"><ZoomIn className="h-4 w-4" /></button>
-              <button onClick={() => setZoom((z) => Math.max(z - 0.2, 0.4))} className="rounded-md p-1.5 hover:bg-muted" title="Zoom out"><ZoomOut className="h-4 w-4" /></button>
-              <button onClick={resetView} className="rounded-md p-1.5 hover:bg-muted" title="Reset"><Maximize className="h-4 w-4" /></button>
+          <div ref={containerRef} className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-[#1E293B] to-[#0F172A] shadow-inner">
+            <div className="absolute right-3 top-3 z-10 flex flex-col gap-1 rounded-lg border border-border/50 bg-white/10 backdrop-blur-md p-1 shadow-sm">
+              <button onClick={() => fgRef.current?.zoom(fgRef.current.zoom() * 1.2, 400)} className="rounded-md p-1.5 text-white hover:bg-white/20 transition-colors" title="Zoom in"><ZoomIn className="h-4 w-4" /></button>
+              <button onClick={() => fgRef.current?.zoom(fgRef.current.zoom() / 1.2, 400)} className="rounded-md p-1.5 text-white hover:bg-white/20 transition-colors" title="Zoom out"><ZoomOut className="h-4 w-4" /></button>
+              <button onClick={resetView} className="rounded-md p-1.5 text-white hover:bg-white/20 transition-colors" title="Reset"><Maximize className="h-4 w-4" /></button>
             </div>
 
             {loading ? (
               <div className="flex h-[600px] items-center justify-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-border border-t-[#4DA8D8]" />
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-white/20 border-t-[#4DA8D8]" />
               </div>
             ) : (
-              <svg
-                ref={svgRef}
-                width="100%"
-                height="600"
-                viewBox="0 0 1000 800"
-                className="cursor-grab select-none"
-                style={{ cursor: isDragging ? "grabbing" : "grab" }}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-              >
-                <defs>
-                  {Object.values(NODE_TYPES).map((c) => (
-                    <radialGradient key={c.color} id={`grad_${c.color.replace("#", "")}`} cx="35%" cy="35%">
-                      <stop offset="0%" stopColor="white" stopOpacity="0.55" />
-                      <stop offset="45%" stopColor={c.color} stopOpacity="1" />
-                      <stop offset="100%" stopColor={c.color} stopOpacity="0.85" />
-                    </radialGradient>
-                  ))}
-                </defs>
+              <ForceGraph2D
+                ref={fgRef}
+                width={dimensions.width}
+                height={dimensions.height}
+                graphData={filteredData}
+                nodeRelSize={1}
+                nodeVal={node => NODE_TYPES[node.type]?.radius || 5}
+                nodeColor={node => {
+                  const isHighlight = highlightNodes.nodes.size > 0;
+                  return isHighlight && !highlightNodes.nodes.has(node.id) 
+                    ? '#334155' 
+                    : (NODE_TYPES[node.type]?.color || '#cbd5e1');
+                }}
+                nodeCanvasObjectMode={() => "after"}
+                nodeCanvasObject={(node, ctx, globalScale) => {
+                  const label = node.label;
+                  const fontSize = 12/globalScale;
+                  ctx.font = `${fontSize}px Sans-Serif`;
+                  const textWidth = ctx.measureText(label).width;
+                  const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.2);
 
-                <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
-                  {/* Edges (curved) */}
-                  {visibleEdges.map((edge, i) => {
-                    const source = nodeById.get(edge.source);
-                    const target = nodeById.get(edge.target);
-                    if (!source || !target) return null;
-                    const isHighlighted = connectedIds?.has(edge.source) && connectedIds?.has(edge.target);
-                    const color = edgeColor(edge.type);
-                    return (
-                      <path
-                        key={i}
-                        d={curvedPath(source.x, source.y, target.x, target.y, 0.1)}
-                        fill="none"
-                        stroke={color}
-                        strokeWidth={isHighlighted ? 2.2 : 0.9}
-                        strokeOpacity={isHighlighted ? 0.85 : connectedIds ? 0.08 : 0.28}
-                        strokeLinecap="round"
-                      />
-                    );
-                  })}
+                  const isHighlight = highlightNodes.nodes.size > 0;
+                  const dimmed = isHighlight && !highlightNodes.nodes.has(node.id);
 
-                  {/* Nodes */}
-                  {filteredNodes.map((node) => {
-                    const config = NODE_TYPES[node.type] || NODE_TYPES.report;
-                    const isHighlighted = connectedIds?.has(node.id);
-                    const isDimmed = connectedIds && !connectedIds.has(node.id);
-                    const isSelected = selectedNode?.id === node.id;
-                    const isHover = hoveredNode === node.id;
-                    const r = config.radius;
-                    const gradId = `grad_${config.color.replace("#", "")}`;
-                    return (
-                      <g
-                        key={node.id}
-                        transform={`translate(${node.x}, ${node.y})`}
-                        className="cursor-pointer transition-opacity"
-                        onClick={() => setSelectedNode(node)}
-                        onMouseEnter={() => setHoveredNode(node.id)}
-                        onMouseLeave={() => setHoveredNode(null)}
-                        style={{ opacity: isDimmed ? 0.28 : 1 }}
-                      >
-                        {(isHover || isSelected) && (
-                          <circle r={r + 6} fill={config.color} fillOpacity={0.14} />
-                        )}
-                        <circle
-                          r={r}
-                          fill={`url(#${gradId})`}
-                          stroke={isSelected ? "#071A2B" : "white"}
-                          strokeWidth={isSelected ? 2.5 : 1.5}
-                        />
-                        <text
-                          y={r + 13}
-                          textAnchor="middle"
-                          className="pointer-events-none fill-[#071A2B] text-[10px] font-semibold"
-                          style={{ opacity: isHighlighted || !connectedIds ? 1 : 0.45 }}
-                        >
-                          {node.label.length > 20 ? node.label.slice(0, 18) + "…" : node.label}
-                        </text>
-                      </g>
-                    );
-                  })}
-                </g>
-              </svg>
+                  if (globalScale > 1.5 && !dimmed) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.fillRect(node.x - bckgDimensions[0] / 2, node.y + (NODE_TYPES[node.type]?.radius || 5) + 2, bckgDimensions[0], bckgDimensions[1]);
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = '#0F172A';
+                    ctx.fillText(label, node.x, node.y + (NODE_TYPES[node.type]?.radius || 5) + 2 + bckgDimensions[1]/2);
+                  }
+                }}
+                linkColor={link => edgeColor(link.type)}
+                linkWidth={link => highlightNodes.links.has(link) ? 3 : 1}
+                linkOpacity={link => highlightNodes.links.size > 0 && !highlightNodes.links.has(link) ? 0.1 : 0.6}
+                onNodeHover={node => setHoveredNode(node)}
+                onNodeClick={handleNodeClick}
+                onEngineStop={() => fgRef.current?.zoomToFit(400, 50)}
+              />
             )}
           </div>
-
+          
           <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-            <span><strong className="text-foreground">{filteredNodes.length}</strong> nodes</span>
-            <span><strong className="text-foreground">{visibleEdges.length}</strong> relationships</span>
-            <span>Click a node to see details · Drag to pan · Use zoom controls</span>
+            <span><strong className="text-foreground">{filteredData.nodes.length}</strong> nodes</span>
+            <span><strong className="text-foreground">{filteredData.links.length}</strong> relationships</span>
+            <span>Drag nodes to pin them · Scroll to zoom · Click for details</span>
             <PrototypeTag />
           </div>
         </div>

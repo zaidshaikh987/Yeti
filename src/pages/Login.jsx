@@ -30,6 +30,8 @@ export default function Login() {
     try {
       // As requested, this is a dummy login bypass for local development.
       console.log("Using dummy login bypass!");
+      window.localStorage.removeItem('base44_access_token');
+      window.localStorage.setItem('base44_access_token', 'dummy-token');
       window.localStorage.setItem('token', 'dummy-token');
       forceLogin(); // This will bypass the auth check loop
       window.location.href = returnTo;
